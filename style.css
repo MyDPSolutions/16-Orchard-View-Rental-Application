@@ -60,7 +60,6 @@ body {
 .progress-step.complete { color: #2f6f44; }
 
 form { padding: 35px; }
-
 .form-step { display: none; margin-bottom: 40px; }
 .form-step.active { display: block; }
 
@@ -71,7 +70,6 @@ h2 {
 }
 
 h3 { color: #444; }
-
 label { display: block; margin-top: 18px; font-weight: 600; }
 
 input, select, textarea {
@@ -98,12 +96,7 @@ input:focus, select:focus, textarea:focus {
 .checkbox { font-weight: normal; }
 .checkbox input { width: auto; margin-right: 8px; }
 
-.financial-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 20px;
-}
-
+.financial-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
 .financial-table th { background: #1f4e79; color: white; padding: 10px; }
 .financial-table td { border: 1px solid #ddd; padding: 5px; }
 .financial-table input { border: none; }
@@ -131,7 +124,7 @@ input:focus, select:focus, textarea:focus {
     border-top: 1px solid #ddd;
 }
 
-.primary-button, .secondary-button, .submit-button {
+.primary-button, .secondary-button, .submit-button, .download-pdf-button {
     border: none;
     padding: 14px 28px;
     border-radius: 8px;
@@ -155,6 +148,35 @@ input:focus, select:focus, textarea:focus {
 .submit-button.submitted { background: #2f6f44; cursor: default; }
 .review-navigation { justify-content: flex-start; }
 
+.submission-confirmation {
+    margin-top: 20px;
+    padding: 30px;
+    background: #f2f8f4;
+    border: 2px solid #2f6f44;
+    border-radius: 10px;
+    text-align: center;
+}
+
+.submission-confirmation h3 {
+    margin-top: 0;
+    color: #245b38;
+    font-size: 24px;
+}
+
+.submission-confirmation p { font-size: 16px; line-height: 1.5; }
+
+.download-pdf-button {
+    display: block;
+    width: 100%;
+    margin-top: 22px;
+    background: #1f4e79;
+    color: white;
+    font-weight: 700;
+    font-size: 17px;
+}
+
+.download-pdf-button:hover { background: #163a5c; }
+
 footer { text-align: center; padding: 25px; background: #f1f1f1; color: #555; }
 
 @media(max-width:700px){
@@ -168,4 +190,5 @@ footer { text-align: center; padding: 25px; background: #f1f1f1; color: #555; }
     .financial-table { font-size: 12px; display: block; overflow-x: auto; }
     .wizard-navigation { flex-direction: column-reverse; }
     .primary-button, .secondary-button { width: 100%; }
+    .submission-confirmation { padding: 20px; }
 }
