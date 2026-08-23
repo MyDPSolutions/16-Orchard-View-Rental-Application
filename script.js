@@ -188,7 +188,7 @@ function renderStage(){
     }
     else if(anchorSection && currentStage === stageGroups.length - 1){
         const submitButton = anchorSection.querySelector(".submit-button");
-        if(submitButton){
+        if(submitButton && !document.getElementById("submissionConfirmation")){
             const nav = document.createElement("div");
             nav.className = "wizard-navigation review-navigation";
 
@@ -223,6 +223,70 @@ function ensureJsPDFLibrary(){
     document.head.appendChild(script);
 }
 
+function showSubmissionConfirmation(){
+    const reviewSection = document.querySelector(".review-section");
+    if(!reviewSection){
+        return;
+    }
+
+    document.querySelectorAll(".wizard-navigation").forEach(nav => nav.remove());
+
+    const existing = document.getElementById("submissionConfirmation");
+    if(existing){
+        existing.remove();
+    }
+
+    const confirmation = document.createElement("div");
+    confirmation.id = "submissionConfirmation";
+    confirmation.className = "submission-confirmation";
+
+    const heading = document.createElement("h3");
+    heading.textContent = "Application Submitted Successfully";
+
+    const details = document.createElement("p");
+    details.textContent = `Application Number: ${createApplicationNumber()}`;
+
+    const instruction = document.createElement("p");
+    instruction.textContent = "Please download and keep a copy of your completed application for your records.";
+
+    const downloadButton = document.createElement("button");
+    downloadButton.type = "button";
+    downloadButton.className = "download-pdf-button";
+    downloadButton.textContent = "Download My Completed Application (PDF)";
+    downloadButton.addEventListener("click", () => {
+        try {
+            downloadPDF();
+        }
+        catch(error){
+            console.error("PDF download error:", error);
+            alert("The PDF could not be created. Please try the download button again.");
+        }
+    });
+
+    confirmation.appendChild(heading);
+    confirmation.appendChild(details);
+    confirmation.appendChild(instruction);
+    confirmation.appendChild(downloadButton);
+    reviewSection.appendChild(confirmation);
+
+    const submitButton = reviewSection.querySelector(".submit-button");
+    if(submitButton){
+        submitButton.style.display = "none";
+    }
+
+    const summary = document.getElementById("applicationSummary");
+    if(summary){
+        summary.style.display = "none";
+    }
+
+    const intro = reviewSection.querySelector("h2 + p");
+    if(intro){
+        intro.style.display = "none";
+    }
+
+    window.scrollTo({top: reviewSection.offsetTop - 20, behavior: "smooth"});
+}
+
 document.addEventListener("DOMContentLoaded", () => {
     createApplicationNumber();
     ensureJsPDFLibrary();
@@ -248,16 +312,9 @@ document.getElementById("rentalApplication").addEventListener("submit", async fu
         const result = await sendApplicationEmail();
 
         if(result !== false){
-            try {
-                downloadPDF();
-            }
-            catch(pdfError){
-                console.warn("PDF copy could not be downloaded:", pdfError);
-            }
-
-            alert("Your rental application has been submitted successfully. A PDF copy will also be downloaded for your records.");
             submitButton.textContent = "Application Submitted";
             submitButton.classList.add("submitted");
+            showSubmissionConfirmation();
             return;
         }
 
