@@ -20,7 +20,7 @@ function generatePDF(){
  bar('Loans & Financial Obligations');table(['Institution','Address','Monthly Payment','Balance'],[[d.loanInstitution1,d.loanAddress1,d.loanPayment1,d.loanBalance1],[d.loanInstitution2,d.loanAddress2,d.loanPayment2,d.loanBalance2]],[50,65,40,40]);
  bar('Automobiles');table(['Make / Model','Year','Plate','Province'],[[d.vehicleMake1,d.vehicleYear1,d.vehiclePlate1,d.vehicleProvince1],[d.vehicleMake2,d.vehicleYear2,d.vehiclePlate2,d.vehicleProvince2]],[75,30,50,40]);
  bar('Emergency Contact');grid([['Name',d.emergencyName],['Phone',d.emergencyPhone],['Address',d.emergencyAddress],['Relationship',d.emergencyRelationship]],4);
- bar('Tenant Screening');grid([['Do you smoke?',d.smoke],['Ever Evicted?',d.evicted],['Ever Broken Rental Agreement?',d.brokenLease],['Credit Check Consent',d.creditConsent]],4);
+ bar('Tenant Screening');grid([['Do you smoke?',d.smoke],['Ever Evicted?',d.evicted],['Ever Broken Rental Agreement?',d.brokenLease]],3);
  bar('Declarations & Authorization');check('I accept the declaration that the information provided is true and complete.',d.declaration);check('I authorize a credit check.',d.creditAuthorization);
  bar('Electronic Signatures');grid([['Applicant Signature',d.applicantSignature],['Signature Date',d.applicantSignatureDate],['Co-Applicant Signature',d.coApplicantSignature],['Co-Applicant Signature Date',d.coApplicantSignatureDate]],4);
  const n=pdf.getNumberOfPages();for(let p=1;p<=n;p++){pdf.setPage(p);pdf.setFont('helvetica','normal');pdf.setFontSize(5.8);pdf.setTextColor(100);pdf.text(`16 Orchard View Drive Rental Application  |  ${d.applicationNumber}`,M,274);pdf.text(`Page ${p} of ${n}`,W-M,274,{align:'right'});}return pdf;
