@@ -47,12 +47,13 @@ function createReview(){
     const orderedKeys = [...importantOrder,...Object.keys(data).filter(key => !importantOrder.includes(key) && key !== "submissionDate"),"submissionDate"];
     orderedKeys.forEach(key => {
         const value = data[key];
-        if(value === undefined || value === null || String(value).trim() === "") return;
+        const displayValue = value === undefined || value === null ? "" : String(value).trim();
+        if(displayValue === "" || displayValue.toLowerCase() === "select") return;
         const row = document.createElement("p");
         const strong = document.createElement("strong");
         strong.textContent = friendlyLabel(key) + ": ";
         row.appendChild(strong);
-        row.appendChild(document.createTextNode(String(value)));
+        row.appendChild(document.createTextNode(displayValue));
         summary.appendChild(row);
     });
 }
