@@ -10,9 +10,23 @@ EMAIL HANDLER
 })();
 
 function buildApplicationSummary(data){
-    return Object.keys(data)
-        .filter(key => data[key] !== undefined && data[key] !== null && String(data[key]).trim() !== "")
-        .map(key => `${friendlyLabel(key)}: ${data[key]}`)
+    const rows = [
+        ["Application Number", data.applicationNumber],
+        ["Applicant", `${data.firstName || ""} ${data.lastName || ""}`.trim()],
+        ["Email", data.email],
+        ["Home Phone", data.homePhone],
+        ["Desired Move-In Date", data.moveInDate],
+        ["Employer", data.employer],
+        ["Income", data.income],
+        ["Credit Check Consent", data.creditConsent],
+        ["Applicant Signature", data.applicantSignature],
+        ["Signature Date", data.applicantSignatureDate],
+        ["Submitted", data.submissionDate]
+    ];
+
+    return rows
+        .filter(([, value]) => value !== undefined && value !== null && String(value).trim() !== "")
+        .map(([label, value]) => `${label}: ${value}`)
         .join("\n");
 }
 
@@ -26,7 +40,7 @@ async function sendApplicationEmail(){
         applicant_email: data.email,
         submission_date: data.submissionDate,
         property_address: "16 Orchard View Drive",
-        message: "New rental application received for 16 Orchard View Drive.",
+        message: "A new rental application has been submitted for 16 Orchard View Drive. The applicant has been provided with a downloadable PDF copy for their records. No PDF is attached to this notification email.",
         application_summary: buildApplicationSummary(data)
     };
 
