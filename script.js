@@ -104,6 +104,21 @@ function ensureJsPDFLibrary(){
     const script=document.createElement("script");script.src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";script.dataset.ormsJspdf="true";document.head.appendChild(script);
 }
 
+function showFinalThankYou(referenceNumber){
+    const form=document.getElementById("rentalApplication");
+    if(!form)return;
+    form.reset();
+    form.innerHTML="";
+    const panel=document.createElement("section");panel.className="form-step active review-section";
+    const box=document.createElement("div");box.className="submission-confirmation";
+    const heading=document.createElement("h3");heading.textContent="Thank You — Application Submitted";
+    const message=document.createElement("p");message.textContent="Your completed application has been downloaded and your submission is complete. You may now safely close this page.";
+    const reference=document.createElement("p");reference.textContent=`Application Number: ${referenceNumber}`;
+    box.append(heading,message,reference);panel.appendChild(box);form.appendChild(panel);
+    document.querySelectorAll(".progress-step").forEach(step=>{step.classList.remove("active");step.classList.add("complete");});
+    window.scrollTo({top:0,behavior:"smooth"});
+}
+
 function showSubmissionConfirmation(){
     const reviewSection=document.querySelector(".review-section"); if(!reviewSection)return;
     document.querySelectorAll(".wizard-navigation").forEach(nav=>nav.remove());
@@ -113,7 +128,18 @@ function showSubmissionConfirmation(){
     const details=document.createElement("p");details.textContent=`Application Number: ${createApplicationNumber()}`;
     const instruction=document.createElement("p");instruction.textContent="Please download and keep a copy of your completed application for your records.";
     const downloadButton=document.createElement("button");downloadButton.type="button";downloadButton.className="download-pdf-button";downloadButton.textContent="Download My Completed Application (PDF)";
-    downloadButton.addEventListener("click",()=>{try{downloadPDF();}catch(error){console.error("PDF download error:",error);alert("The PDF could not be created. Please try the download button again.");}});
+    downloadButton.addEventListener("click",()=>{
+        try{
+            const referenceNumber=createApplicationNumber();
+            downloadPDF();
+            downloadButton.disabled=true;
+            downloadButton.textContent="PDF Downloaded";
+            setTimeout(()=>showFinalThankYou(referenceNumber),2000);
+        }catch(error){
+            console.error("PDF download error:",error);
+            alert("The PDF could not be created. Please try the download button again.");
+        }
+    });
     confirmation.append(heading,details,instruction,downloadButton);reviewSection.appendChild(confirmation);
     const submitButton=reviewSection.querySelector(".submit-button");if(submitButton)submitButton.style.display="none";
     const summary=document.getElementById("applicationSummary");if(summary)summary.style.display="none";
