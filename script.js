@@ -6,6 +6,7 @@
 let applicationNumber = null;
 let currentStage = 0;
 
+const ORMS_APPLICATIONS_API = "https://orms-api.16orchardviewdr.workers.dev/api/applications";
 const stageGroups = [[0],[1,2],[3,4],[5,6,7,8],[9]];
 
 function createApplicationNumber(){
@@ -37,6 +38,36 @@ function collectApplicationData(){
     data.applicationNumber = createApplicationNumber();
     data.submissionDate = getSubmissionDate();
     return data;
+}
+
+async function sendApplicationToOrms(data){
+    const payload = {
+        ...data,
+        propertyAddress: "16 Orchard View Drive"
+    };
+
+    const response = await fetch(ORMS_APPLICATIONS_API, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+    });
+
+    let result = {};
+    try { result = await response.json(); } catch { result = {}; }
+
+    // A duplicate means ORMS already received this exact application number.
+    // Treat that as safe success so an applicant can retry if EmailJS failed.
+    if(response.status === 409 && result.applicationNumber === data.applicationNumber){
+        return { success: true, duplicate: true, applicationId: result.applicationId };
+    }
+
+    if(!response.ok || result.success !== true){
+        const message = result.error || "ORMS application intake failed.";
+        const details = Array.isArray(result.details) ? ` ${result.details.join(" ")}` : "";
+        throw new Error(message + details);
+    }
+
+    return result;
 }
 
 function createReview(){
@@ -126,7 +157,30 @@ document.addEventListener("DOMContentLoaded",()=>{createApplicationNumber();ensu
 document.getElementById("rentalApplication").addEventListener("submit",async function(event){
     event.preventDefault();
     if(!this.checkValidity()){alert("Please complete all required fields before submitting.");this.reportValidity();return;}
-    const submitButton=this.querySelector(".submit-button"),originalText=submitButton.textContent;submitButton.disabled=true;submitButton.textContent="Submitting...";
-    try{createReview();const result=await sendApplicationEmail();if(result!==false){submitButton.textContent="Application Submitted";submitButton.classList.add("submitted");showSubmissionConfirmation();return;}throw new Error("Email submission failed");}
-    catch(error){console.error(error);alert("There was an error submitting your application. Please try again.");submitButton.disabled=false;submitButton.textContent=originalText;}
+
+    const submitButton=this.querySelector(".submit-button"),originalText=submitButton.textContent;
+    submitButton.disabled=true;
+    submitButton.textContent="Submitting...";
+
+    try{
+        createReview();
+        const data = collectApplicationData();
+
+        // ORMS is the system of record. Save there first.
+        await sendApplicationToOrms(data);
+
+        // Preserve the existing owner email notification.
+        const emailResult = await sendApplicationEmail(data);
+        if(emailResult === false) throw new Error("Email submission failed");
+
+        submitButton.textContent="Application Submitted";
+        submitButton.classList.add("submitted");
+        showSubmissionConfirmation();
+    }
+    catch(error){
+        console.error("Application submission error:",error);
+        alert("There was an error submitting your application. Please try again. Your application number will remain the same.");
+        submitButton.disabled=false;
+        submitButton.textContent=originalText;
+    }
 });
