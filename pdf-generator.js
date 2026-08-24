@@ -25,4 +25,38 @@ function generatePDF(){
  bar('Electronic Signatures');grid([['Applicant Signature',d.applicantSignature],['Signature Date',d.applicantSignatureDate],['Co-Applicant Signature',d.coApplicantSignature],['Co-Applicant Signature Date',d.coApplicantSignatureDate]],4);
  const n=pdf.getNumberOfPages();for(let p=1;p<=n;p++){pdf.setPage(p);pdf.setFont('helvetica','normal');pdf.setFontSize(5.8);pdf.setTextColor(100);pdf.text(`16 Orchard View Drive Rental Application  |  ${d.applicationNumber}`,M,274);pdf.text(`Page ${p} of ${n}`,W-M,274,{align:'right'});}return pdf;
 }
-function downloadPDF(){const pdf=generatePDF(),d=collectApplicationData();pdf.save(`16-Orchard-View-Rental-Application-${d.applicationNumber}.pdf`);}
+
+const PDF_MAILER_API='https://orms-api.16orchardviewdr.workers.dev/api/application-pdf-email';
+const emailedPdfApplications=new Set();
+
+async function emailOwnerCompletedPDF(pdf,d){
+ const applicationNumber=String(d.applicationNumber||'').trim();
+ if(!applicationNumber||emailedPdfApplications.has(applicationNumber))return;
+ const applicantName=`${d.firstName||''} ${d.lastName||''}`.trim()||'Rental Applicant';
+ const filename=`16-Orchard-View-Rental-Application-${applicationNumber}.pdf`;
+ try{
+  const response=await fetch(PDF_MAILER_API,{
+   method:'POST',
+   headers:{'Content-Type':'application/json'},
+   body:JSON.stringify({
+    application_number:applicationNumber,
+    applicant_name:applicantName,
+    pdf_data_uri:pdf.output('datauristring'),
+    filename
+   })
+  });
+  let result={};try{result=await response.json();}catch{}
+  if(!response.ok||result.success!==true)throw new Error(result.error||`PDF email failed (${response.status}).`);
+  emailedPdfApplications.add(applicationNumber);
+  console.log('Owner PDF copy emailed successfully.',result.id||'');
+ }catch(error){
+  console.error('Owner PDF email error:',error);
+ }
+}
+
+function downloadPDF(){
+ const pdf=generatePDF(),d=collectApplicationData();
+ const filename=`16-Orchard-View-Rental-Application-${d.applicationNumber}.pdf`;
+ void emailOwnerCompletedPDF(pdf,d);
+ pdf.save(filename);
+}
