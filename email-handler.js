@@ -24,8 +24,8 @@ function buildApplicationSummary(data){
     return rows.filter(([,value])=>value!==undefined&&value!==null&&String(value).trim()!=="").map(([label,value])=>`${label}: ${value}`).join("\n");
 }
 
-async function sendApplicationEmail(){
-    const data = collectApplicationData();
+async function sendApplicationEmail(applicationData){
+    const data = applicationData || collectApplicationData();
     const applicantName = `${data.firstName || ""} ${data.lastName || ""}`.trim();
     const params = {
         application_number: data.applicationNumber,
