@@ -25,12 +25,22 @@ async function sendApplicationEmail(applicationData){
     };
 
     try{
-        // Tenant confirmation only. The completed owner PDF copy is handled
-        // separately by the Cloudflare Worker + Resend mailer when the PDF is downloaded.
+        // Send exactly one tenant confirmation through EmailJS.
         await emailjs.send(EMAILJS_SERVICE_ID, TENANT_TEMPLATE_ID, tenantParams);
+
+        // Automatically generate and email the landlord's completed PDF copy
+        // at submission time. The tenant download button remains available,
+        // but is no longer required for the landlord to receive the PDF.
+        if(typeof generatePDF === "function" && typeof emailOwnerCompletedPDF === "function"){
+            const pdf = generatePDF();
+            await emailOwnerCompletedPDF(pdf, data);
+        } else {
+            console.error("Owner PDF mailer is unavailable.");
+        }
+
         return true;
     } catch(error){
-        console.error("EmailJS tenant confirmation error:",error);
+        console.error("Application email workflow error:",error);
         throw error;
     }
 }
