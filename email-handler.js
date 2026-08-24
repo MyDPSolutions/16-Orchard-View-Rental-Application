@@ -28,13 +28,18 @@ async function sendApplicationEmail(applicationData){
     const data = applicationData || collectApplicationData();
     const applicantName = `${data.firstName || ""} ${data.lastName || ""}`.trim();
     const params = {
+        // Variables used by the owner notification template.
         application_number: data.applicationNumber,
         applicant_name: applicantName,
         applicant_email: data.email,
         submission_date: data.submissionDate,
         property_address: "16 Orchard View Drive",
         message: "A new rental application has been submitted for 16 Orchard View Drive. The applicant has authorized a credit check and has been provided with a downloadable PDF copy for their records.",
-        application_summary: buildApplicationSummary(data)
+        application_summary: buildApplicationSummary(data),
+
+        // Aliases used by the linked EmailJS Auto-Reply template.
+        name: applicantName,
+        email: data.email
     };
     try{
         await emailjs.send("service_iuhvgrh","template_j94vppx",params);
