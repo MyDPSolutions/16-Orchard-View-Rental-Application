@@ -55,8 +55,6 @@ async function sendApplicationToOrms(data){
     let result = {};
     try { result = await response.json(); } catch { result = {}; }
 
-    // A duplicate means ORMS already received this exact application number.
-    // Treat that as safe success so an applicant can retry if EmailJS failed.
     if(response.status === 409 && result.applicationNumber === data.applicationNumber){
         return { success: true, duplicate: true, applicationId: result.applicationId };
     }
@@ -166,10 +164,8 @@ document.getElementById("rentalApplication").addEventListener("submit",async fun
         createReview();
         const data = collectApplicationData();
 
-        // ORMS is the system of record. Save there first.
-        await sendApplicationToOrms(data);
-
-        // Preserve the existing owner email notification.
+        // EMAIL TEST MODE: ORMS is intentionally not called here.
+        // This allows the public application email workflow to be tested independently.
         const emailResult = await sendApplicationEmail(data);
         if(emailResult === false) throw new Error("Email submission failed");
 
