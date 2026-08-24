@@ -41,30 +41,15 @@ function collectApplicationData(){
 }
 
 async function sendApplicationToOrms(data){
-    const payload = {
-        ...data,
-        propertyAddress: "16 Orchard View Drive"
-    };
-
-    const response = await fetch(ORMS_APPLICATIONS_API, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-    });
-
-    let result = {};
-    try { result = await response.json(); } catch { result = {}; }
-
-    if(response.status === 409 && result.applicationNumber === data.applicationNumber){
-        return { success: true, duplicate: true, applicationId: result.applicationId };
-    }
-
+    const payload = {...data, propertyAddress: "16 Orchard View Drive"};
+    const response = await fetch(ORMS_APPLICATIONS_API, {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
+    let result = {}; try { result = await response.json(); } catch { result = {}; }
+    if(response.status === 409 && result.applicationNumber === data.applicationNumber) return {success:true,duplicate:true,applicationId:result.applicationId};
     if(!response.ok || result.success !== true){
         const message = result.error || "ORMS application intake failed.";
         const details = Array.isArray(result.details) ? ` ${result.details.join(" ")}` : "";
         throw new Error(message + details);
     }
-
     return result;
 }
 
@@ -81,22 +66,16 @@ function createReview(){
         const row = document.createElement("p");
         const strong = document.createElement("strong");
         strong.textContent = friendlyLabel(key) + ": ";
-        row.appendChild(strong);
-        row.appendChild(document.createTextNode(displayValue));
-        summary.appendChild(row);
+        row.appendChild(strong); row.appendChild(document.createTextNode(displayValue)); summary.appendChild(row);
     });
 }
 
 function getSections(){ return Array.from(document.querySelectorAll("#rentalApplication .form-step")); }
-
 function validateStage(stageIndex){
     const sections = getSections();
     for(const sectionIndex of (stageGroups[stageIndex] || [])){
-        const section = sections[sectionIndex];
-        if(!section) continue;
-        for(const field of Array.from(section.querySelectorAll("[required]"))){
-            if(!field.checkValidity()){ field.reportValidity(); return false; }
-        }
+        const section = sections[sectionIndex]; if(!section) continue;
+        for(const field of Array.from(section.querySelectorAll("[required]"))){ if(!field.checkValidity()){ field.reportValidity(); return false; } }
     }
     return true;
 }
@@ -111,19 +90,11 @@ function renderStage(){
     const anchorSection = sections[lastVisibleIndex];
     if(anchorSection && currentStage < stageGroups.length - 1){
         const nav = document.createElement("div"); nav.className = "wizard-navigation";
-        if(currentStage > 0){
-            const back = document.createElement("button"); back.type="button"; back.className="secondary-button"; back.textContent="Back";
-            back.addEventListener("click",()=>{currentStage--;renderStage();window.scrollTo({top:0,behavior:"smooth"});}); nav.appendChild(back);
-        }
-        const next = document.createElement("button"); next.type="button"; next.className="primary-button"; next.textContent=currentStage===stageGroups.length-2?"Review Application":"Continue";
-        next.addEventListener("click",()=>{if(!validateStage(currentStage))return;currentStage++;if(currentStage===stageGroups.length-1)createReview();renderStage();window.scrollTo({top:0,behavior:"smooth"});}); nav.appendChild(next); anchorSection.appendChild(nav);
+        if(currentStage > 0){ const back=document.createElement("button");back.type="button";back.className="secondary-button";back.textContent="Back";back.addEventListener("click",()=>{currentStage--;renderStage();window.scrollTo({top:0,behavior:"smooth"});});nav.appendChild(back); }
+        const next=document.createElement("button");next.type="button";next.className="primary-button";next.textContent=currentStage===stageGroups.length-2?"Review Application":"Continue";next.addEventListener("click",()=>{if(!validateStage(currentStage))return;currentStage++;if(currentStage===stageGroups.length-1)createReview();renderStage();window.scrollTo({top:0,behavior:"smooth"});});nav.appendChild(next);anchorSection.appendChild(nav);
     } else if(anchorSection && currentStage === stageGroups.length - 1){
-        const submitButton = anchorSection.querySelector(".submit-button");
-        if(submitButton && !document.getElementById("submissionConfirmation")){
-            const nav=document.createElement("div");nav.className="wizard-navigation review-navigation";
-            const back=document.createElement("button");back.type="button";back.className="secondary-button";back.textContent="Back to Edit";
-            back.addEventListener("click",()=>{currentStage--;renderStage();window.scrollTo({top:0,behavior:"smooth"});});submitButton.parentNode.insertBefore(nav,submitButton);nav.appendChild(back);
-        }
+        const submitButton=anchorSection.querySelector(".submit-button");
+        if(submitButton && !document.getElementById("submissionConfirmation")){ const nav=document.createElement("div");nav.className="wizard-navigation review-navigation";const back=document.createElement("button");back.type="button";back.className="secondary-button";back.textContent="Back to Edit";back.addEventListener("click",()=>{currentStage--;renderStage();window.scrollTo({top:0,behavior:"smooth"});});submitButton.parentNode.insertBefore(nav,submitButton);nav.appendChild(back); }
     }
 }
 
@@ -155,28 +126,25 @@ document.addEventListener("DOMContentLoaded",()=>{createApplicationNumber();ensu
 document.getElementById("rentalApplication").addEventListener("submit",async function(event){
     event.preventDefault();
     if(!this.checkValidity()){alert("Please complete all required fields before submitting.");this.reportValidity();return;}
-
     const submitButton=this.querySelector(".submit-button"),originalText=submitButton.textContent;
-    submitButton.disabled=true;
-    submitButton.textContent="Submitting...";
-
+    submitButton.disabled=true; submitButton.textContent="Submitting...";
     try{
         createReview();
-        const data = collectApplicationData();
+        const data=collectApplicationData();
 
-        // EMAIL TEST MODE: ORMS is intentionally not called here.
-        // This allows the public application email workflow to be tested independently.
-        const emailResult = await sendApplicationEmail(data);
-        if(emailResult === false) throw new Error("Email submission failed");
+        // One tenant confirmation only.
+        const emailResult=await sendApplicationEmail(data);
+        if(emailResult===false) throw new Error("Tenant confirmation email failed");
 
-        submitButton.textContent="Application Submitted";
-        submitButton.classList.add("submitted");
-        showSubmissionConfirmation();
-    }
-    catch(error){
+        // Automatically create and email the completed PDF to the landlord at submit.
+        if(typeof generatePDF!=="function" || typeof emailOwnerCompletedPDF!=="function") throw new Error("PDF mailer is unavailable");
+        const completedPdf=generatePDF();
+        await emailOwnerCompletedPDF(completedPdf,data);
+
+        submitButton.textContent="Application Submitted";submitButton.classList.add("submitted");showSubmissionConfirmation();
+    } catch(error){
         console.error("Application submission error:",error);
         alert("There was an error submitting your application. Please try again. Your application number will remain the same.");
-        submitButton.disabled=false;
-        submitButton.textContent=originalText;
+        submitButton.disabled=false;submitButton.textContent=originalText;
     }
 });
